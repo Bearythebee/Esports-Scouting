@@ -1,6 +1,6 @@
 # eSports Scouting
 
-Goal of this project is to build a classifier for potential eSports talents
+Goal of this project is to build a classifier for scouting of potential eSports talents 
 
 ## Current Features
 
