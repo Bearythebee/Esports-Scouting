@@ -2,13 +2,17 @@ from pynput import mouse, keyboard
 from datetime import datetime, timedelta
 import pandas as pd
 import ctypes
+import pickle
 
 PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
 
+print('Data Collection Started')
+
 start_time  = datetime.now()
 mouse_df = pd.DataFrame(columns=["Timestamp", "x", "y", "Action"])
 keyboard_df = pd.DataFrame(columns=["Timestamp", "key"])
+
 
 class Listeners:
 
@@ -73,9 +77,9 @@ class Listeners:
                                               "Action": 'Move'}, ignore_index=True, )
         if self.keyboard.running is False:
             end_time = datetime.now()
-            self.keyboard_df.to_csv('keyboard.csv')
-            self.mouse_df.to_csv('mouse.csv')
-            print('Stopping Mouse')
+            self.keyboard_df.to_pickle('keyboard.pickle')
+            self.mouse_df.to_pickle('mouse.pickle')
+            print('Data Collection Stopped')
             print('Total Time taken : {}'.format(end_time-start_time))
             return False
 
@@ -167,4 +171,5 @@ def main():
 
 
 main()
+
 
