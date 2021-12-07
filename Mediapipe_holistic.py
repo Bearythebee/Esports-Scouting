@@ -2,6 +2,8 @@ import cv2
 import os
 import mediapipe as mp
 import numpy as np
+import pandas as pd
+import json
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -32,68 +34,86 @@ PINKY_PIP = 18
 PINKY_DIP = 19
 PINKY_TIP = 20
 
-# For static images:
+labels = pd.read_csv('data/test/Class.csv')
 
-camera = 'test2'
-image_dir = 'C:/Users/admin/PycharmProjects/EsportsProject/Esports-Scouting/data/test/videoframes/{}/raw'.format(camera)
+for i in range(1,10):
+    player = 'Video{}'.format(i)
+    image_dir = 'data/test/videoframes/Main/{}'.format(player)
 
-with mp_holistic.Holistic(
-        static_image_mode=False,
-        model_complexity=2,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as holistic:
+    label = labels[labels['Video'] == player]['Class'].values[0]
 
-    main_arr = []
+    for folder in os.listdir(image_dir):
 
-    for idx, file in enumerate(os.listdir(image_dir)):
-        # Read an image, flip it around y-axis for correct handedness output (see
-        # above).
-        Image = cv2.imread('C:/Users/admin/PycharmProjects/EsportsProject/Esports-Scouting/data/test/videoframes/{}/raw/'.format(camera)+file)
-        image = cv2.flip(Image, 1)
-        #image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-        image_height, image_width, _ = image.shape
+        with mp_holistic.Holistic(
+                static_image_mode=False,
+                model_complexity=2,
+                min_detection_confidence=0.4,
+                min_tracking_confidence=0.4) as holistic:
 
-        # Convert the BGR image to RGB before processing.
-        results = holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            main_arr = []
+            videodir = image_dir+'/' + folder +'/raw'
 
-        pose_landmarks = results.pose_landmarks
-        lefthand_landmarks = results.left_hand_landmarks
-        righthand_landmarks = results.right_hand_landmarks
+            for idx, file in enumerate(os.listdir(videodir)):
+                # Read an image, flip it around y-axis for correct handedness output (see
+                # above).
+                Image = cv2.imread(videodir +'/' + file)
+                image = cv2.flip(Image, 1)
+                #image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+                image_height, image_width, _ = image.shape
 
-        arr = []
+                # Convert the BGR image to RGB before processing.
+                results = holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-        leftshoulder = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
-        leftelbow = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
-        leftwristpose = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+                pose_landmarks = results.pose_landmarks
+                lefthand_landmarks = results.left_hand_landmarks
+                righthand_landmarks = results.right_hand_landmarks
 
-        arr.append([leftshoulder.x, leftshoulder.y, abs(leftwristpose.z) - abs(leftshoulder.z)])
-        arr.append([leftelbow.x, leftelbow.y, abs(leftwristpose.z) - abs(leftelbow.z)])
+                if lefthand_landmarks ==  None or righthand_landmarks == None:
+                    continue
 
-        for point in mp_hands.HandLandmark:
-            normalizedLandmark = lefthand_landmarks.landmark[point]
-            arr.append([normalizedLandmark.x, normalizedLandmark.y,normalizedLandmark.z])
+                arr = []
 
-        rightshoulder = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
-        rightelbow = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
-        rightwristpose = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+                #leftshoulder = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                #leftelbow = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+               # leftwristpose = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+                #arr.append([leftshoulder.x, leftshoulder.y, abs(leftwristpose.z) - abs(leftshoulder.z)])
+                #arr.append([leftelbow.x, leftelbow.y, abs(leftwristpose.z) - abs(leftelbow.z)])
 
-        arr.append([rightshoulder.x, rightshoulder.y, abs(rightwristpose.z) - abs(rightshoulder.z)])
-        arr.append([rightelbow.x, rightelbow.y, abs(rightwristpose.z) - abs(rightelbow.z)])
+                leftwrist = ''
+                for point in mp_hands.HandLandmark:
+                    normalizedLandmark = lefthand_landmarks.landmark[point]
+                    if point == mp_hands.HandLandmark.WRIST:
+                        leftwrist = normalizedLandmark
+                    else:
+                        arr.append(normalizedLandmark.x - leftwrist.x)
+                        arr.append(normalizedLandmark.y - leftwrist.y)
+                        arr.append(normalizedLandmark.z - leftwrist.z)
 
-        for point in mp_hands.HandLandmark:
-            normalizedLandmark = righthand_landmarks.landmark[point]
-            arr.append([normalizedLandmark.x, normalizedLandmark.y,normalizedLandmark.z])
+                # #rightshoulder = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                # #rightelbow = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+                # rightwristpose = pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST]
+                # #arr.append([rightshoulder.x, rightshoulder.y, abs(rightwristpose.z) - abs(rightshoulder.z)])
+                # #arr.append([rightelbow.x, rightelbow.y, abs(rightwristpose.z) - abs(rightelbow.z)])
 
-        main_arr.append(arr)
+                rightwrist = ''
+                for point in mp_hands.HandLandmark:
+                    normalizedLandmark = righthand_landmarks.landmark[point]
+                    if point == mp_hands.HandLandmark.WRIST:
+                        rightwrist = normalizedLandmark
+                    else:
+                        arr.append(normalizedLandmark.x - rightwrist.x)
+                        arr.append(normalizedLandmark.y - rightwrist.y)
+                        arr.append(normalizedLandmark.z - rightwrist.z)
+                #
+                main_arr.append(arr)
 
-    main_arr = np.array(main_arr)
-
-    np.save('C:/Users/admin/PycharmProjects/EsportsProject/Esports-Scouting/data/test/coordinates/testdata.npy', main_arr)
-
+            main_arr = np.array(main_arr)
+            np.save('data/test/coordinates/Main/{}/{}.npy'.format(player,folder), main_arr)
+        #
         # annotated_image = image.copy()
         #
         # # 1. Draw face landmarks
-        # mp_drawing.draw_landmarks(annobv tated_image,
+        # mp_drawing.draw_landmarks(annotated_image,
         #                           results.face_landmarks,
         #                           mp_holistic.FACEMESH_TESSELATION,
         #                           mp_drawing.DrawingSpec(color=(80, 110, 10),
@@ -140,5 +160,5 @@ with mp_holistic.Holistic(
         #                                                  circle_radius=2)
         #                           )
         #
-        # cv2.imwrite('C:/Users/admin/PycharmProjects/EsportsProject/Esports-Scouting/data/test/videoframes/{}/labelled/annotated_image_{}.png'.format(camera,idx),
+        # cv2.imwrite('data/test/videoframes/{}/{}/labelled/annotated_image_{}.png'.format(player,folder,idx),
         #            cv2.flip(annotated_image, 1))

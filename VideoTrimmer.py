@@ -1,9 +1,9 @@
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 import pandas as pd
-main_video = 'data/Main/original/CameraFeed/Video4.mp4'
-dest_folder = 'data/Main/Split/Video4/'
+main_video = 'data/Main/original/CameraFeed/Video9.mp4'
+dest_folder = 'data/Main/Split/Video9/'
 
-timings = pd.read_csv("data/Main/Video4.csv")
+timings = pd.read_csv("data/Main/Video9.csv")
 
 video_timings = []
 
